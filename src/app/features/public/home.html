@@ -1,0 +1,358 @@
+<a class="skip-link" href="#public-content">Pular para o conteúdo</a>
+<header class="public-header">
+  <a class="brand" routerLink="/">✳ doa<span>mais</span></a>
+  <nav aria-label="Principal">
+    <a routerLink="/campanhas">Explorar campanhas</a><a routerLink="/faq">Como funciona</a>
+    @if (auth.token()) {
+      <a class="button secondary" routerLink="/admin">Meu painel</a>
+    } @else {
+      <button class="button primary" (click)="loginOpen.set(true)">Entrar</button>
+    }
+  </nav>
+</header>
+<main id="public-content" class="public-content">
+  @if (!campaignId) {
+    <section class="campaign-hero">
+      <div>
+        <span class="eyebrow">PEQUENOS GESTOS. GRANDES HISTÓRIAS.</span>
+        <h1>
+          {{
+            faqOnly
+              ? 'A ajuda começa com uma boa conversa.'
+              : 'O que você tem pode ser o que alguém precisa.'
+          }}
+        </h1>
+        <p>
+          Conecte-se a organizações, conheça suas histórias e encontre uma forma de ajudar — com
+          itens, valores ou um pedido de apoio.
+        </p>
+        <a class="button secondary" [href]="faqOnly ? '#explore-faq' : '#explore'">{{
+          faqOnly ? 'Tirar minhas dúvidas ↓' : 'Encontrar uma causa ↓'
+        }}</a>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <span>♡</span><strong>Doar.<br />Acolher.<br />Transformar.</strong
+        ><small>Uma rede de cuidado.</small>
+      </div>
+    </section>
+  } @else {
+    <a class="back-link" routerLink="/campanhas">← Voltar para campanhas</a>
+  }
+  @if (message()) {
+    <p class="notice" role="status">{{ message() }}</p>
+  }
+  @if (!campaignId && !faqOnly) {
+    <section id="explore" class="explore-heading">
+      <div>
+        <span class="eyebrow">ESCOLHA SUA FORMA DE AJUDAR</span>
+        <h2>Campanhas que precisam de você</h2>
+      </div>
+      <span class="badge">{{ total() }} causas cadastradas</span>
+    </section>
+    <form class="campaign-filters" (ngSubmit)="load(1)">
+      <div>
+        <label for="public-search">Buscar por causa, organização ou cidade</label
+        ><input
+          id="public-search"
+          name="search"
+          type="search"
+          [(ngModel)]="search"
+          placeholder="Ex.: alimentos, Recife, educação"
+          maxlength="100"
+        />
+      </div>
+      <div>
+        <label for="funding-filter">Forma de ajudar</label
+        ><select id="funding-filter" name="funding" [(ngModel)]="funding">
+          <option value="">Todas</option>
+          <option value="money">Valores</option>
+          <option value="items">Itens</option>
+          <option value="mixed">Itens e valores</option>
+        </select>
+      </div>
+      <div>
+        <label for="status-filter">Situação</label
+        ><select id="status-filter" name="status" [(ngModel)]="status">
+          <option value="">Todas</option>
+          <option value="active">Ativas</option>
+          <option value="closed">Encerradas</option>
+        </select>
+      </div>
+      <button class="button primary" [disabled]="loading()">Buscar</button>
+    </form>
+  }
+  @if (loading()) {
+    <p role="status" class="panel">Carregando campanhas…</p>
+  } @else if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+    <button class="button secondary" (click)="load()">Tentar novamente</button>
+  } @else {
+    @if (!faqOnly && !campaignId) {
+      <section class="public-grid" aria-label="Campanhas">
+        @for (c of campaigns(); track c.id) {
+          <article class="cause-card">
+            <a
+              class="cause-cover"
+              [class.cover-items]="c.funding_type === 'items'"
+              [class.cover-mixed]="c.funding_type === 'mixed'"
+              [routerLink]="['/campanhas', c.id]"
+              [attr.aria-label]="'Conhecer ' + c.name"
+              ><span class="cover-category">{{ c.category }}</span
+              ><span class="cover-symbol" aria-hidden="true">{{ symbol(c) }}</span
+              ><span>{{ c.location || 'Uma causa para todos' }}</span></a
+            >
+            <div class="cause-body">
+              <div class="cause-meta">
+                <span>{{ label(c) }}</span
+                ><span class="badge">{{ c.status === 'active' ? 'Ativa' : 'Encerrada' }}</span>
+              </div>
+              <h2>
+                <a [routerLink]="['/campanhas', c.id]">{{ c.name }}</a>
+              </h2>
+              <p class="cause-excerpt">{{ c.description }}</p>
+              <p class="cause-organization">
+                Por <strong>{{ c.organization_name || 'Organização não informada' }}</strong>
+              </p>
+              @if (c.goal_cents > 0) {
+                <label [for]="'progress-' + c.id" class="progress-label"
+                  ><strong>{{ c.raised_cents / 100 | currency: 'BRL' }}</strong
+                  ><span>de {{ c.goal_cents / 100 | currency: 'BRL' }}</span></label
+                ><progress
+                  [id]="'progress-' + c.id"
+                  [value]="c.raised_cents"
+                  [max]="c.goal_cents"
+                ></progress>
+              }
+              @if (c.items.length) {
+                <p class="item-hint">✳ {{ c.items.length }} tipos de itens necessários</p>
+              }
+              <a class="cause-link" [routerLink]="['/campanhas', c.id]"
+                >Conhecer e participar <span aria-hidden="true">→</span></a
+              >
+            </div>
+          </article>
+        } @empty {
+          <div class="panel empty-state">
+            <h2>Nenhuma campanha encontrada</h2>
+            <p>Tente outra busca ou mude os filtros.</p>
+          </div>
+        }
+      </section>
+      <app-pagination
+        [total]="total()"
+        [page]="page()"
+        [disabled]="loading()"
+        (changed)="load($event)"
+      />
+    }
+    @if (campaignId) {
+      @for (c of campaigns(); track c.id) {
+        <section class="detail-heading">
+          <span class="eyebrow">{{ c.category }} · {{ c.location || 'Local a combinar' }}</span>
+          <h1>{{ c.name }}</h1>
+          <div class="detail-byline">
+            <span class="brand-mark" aria-hidden="true">✳</span>
+            <div>
+              <strong>{{ c.organization_name }}</strong>
+              <p>
+                Criada por {{ c.creator_name || 'autoria não registrada' }}
+                @if (c.created_at) {
+                  · {{ c.created_at | date: 'dd/MM/yyyy' }}
+                }
+              </p>
+            </div>
+            <span class="badge">{{
+              c.status === 'active' ? 'Campanha ativa' : 'Campanha encerrada'
+            }}</span>
+          </div>
+        </section>
+        <div class="detail-layout">
+          <div>
+            <section class="story-banner" aria-hidden="true">
+              <span>{{ symbol(c) }}</span>
+              <p>Um gesto seu.<br /><strong>Uma nova possibilidade.</strong></p>
+            </section>
+            <section class="panel detail-story">
+              <span class="eyebrow">CONHEÇA A HISTÓRIA</span>
+              <h2>Sobre esta campanha</h2>
+              <p class="campaign-description">
+                {{ c.description || 'A organização ainda não publicou uma descrição.' }}
+              </p>
+              <h3>Como a ajuda chega a quem precisa</h3>
+              <p class="campaign-description">
+                {{
+                  c.instructions ||
+                    'Envie sua intenção ou pedido de apoio. A organização entrará em contato para combinar os próximos passos.'
+                }}
+              </p>
+              <div class="notice">
+                Sua participação é acompanhada pela organização responsável. Não envie documentos,
+                dados bancários ou informações sensíveis na mensagem.
+              </div>
+            </section>
+          </div>
+          <aside class="detail-support">
+            <section class="panel">
+              <span class="eyebrow">{{ label(c) }}</span>
+              <h2>Faça parte desta história</h2>
+              @if (c.goal_cents > 0) {
+                <p class="raised-value">{{ c.raised_cents / 100 | currency: 'BRL' }}</p>
+                <label for="detail-progress"
+                  >confirmados de uma meta de {{ c.goal_cents / 100 | currency: 'BRL' }}</label
+                ><progress
+                  id="detail-progress"
+                  [value]="c.raised_cents"
+                  [max]="c.goal_cents"
+                ></progress>
+              }
+              @if (c.items.length) {
+                <h3>Itens que fazem a diferença</h3>
+                @for (item of c.items; track item.id) {
+                  <div class="needed-item">
+                    <strong>{{ item.name }}</strong
+                    ><span
+                      >{{ item.received_quantity }} de {{ item.target_quantity }}
+                      {{ item.unit }}</span
+                    ><progress
+                      [attr.aria-label]="item.name"
+                      [value]="item.received_quantity"
+                      [max]="item.target_quantity"
+                    ></progress>
+                  </div>
+                }
+              }
+              @if (c.status === 'active') {
+                <button class="button primary full-width" (click)="openParticipation('donate')">
+                  Quero doar ♡</button
+                ><button class="button secondary full-width" (click)="openParticipation('receive')">
+                  Preciso de ajuda
+                </button>
+                <p class="support-note">
+                  Combine a contribuição diretamente com a organização. O site não cobra nem
+                  transfere valores.
+                </p>
+              } @else {
+                <p class="notice">Esta campanha não recebe novas solicitações.</p>
+              }
+            </section>
+            <div class="support-trust">
+              <strong>Uma conexão com propósito</strong>
+              <p>Seus dados de contato ficam visíveis somente para a administração responsável.</p>
+            </div>
+          </aside>
+        </div>
+      }
+    }
+    <section id="explore-faq" class="panel faq-section" aria-labelledby="faq-title">
+      <h2 id="faq-title">Perguntas frequentes</h2>
+      @for (item of faq(); track item.question) {
+        <details>
+          <summary>{{ item.question }}</summary>
+          <p>{{ item.answer }}</p>
+        </details>
+      }
+    </section>
+  }
+</main>
+<footer class="workspace-footer">DoaMais <span>Juntos, o bem vai mais longe.</span></footer>
+@if (loginOpen()) {
+  <app-dialog title="Entrar na sua conta" (closed)="loginOpen.set(false)"
+    ><app-login [compact]="true"
+  /></app-dialog>
+}
+@if (participation()) {
+  @for (c of campaigns(); track c.id) {
+    <app-dialog
+      [title]="participation() === 'donate' ? 'Quero contribuir' : 'Solicitar apoio'"
+      (closed)="participation.set(null)"
+      ><p class="muted">{{ c.name }}</p>
+      <p>
+        {{
+          participation() === 'donate'
+            ? 'Registre sua intenção. A organização combina a entrega ou contribuição por e-mail.'
+            : 'Conte do que precisa. A organização analisará seu pedido e poderá entrar em contato.'
+        }}
+      </p>
+      <form #participationForm="ngForm" (ngSubmit)="send()">
+        <label for="participant-name">Seu nome</label
+        ><input
+          id="participant-name"
+          name="name"
+          [(ngModel)]="draft.name"
+          required
+          minlength="3"
+          maxlength="100"
+          autocomplete="name"
+        /><label for="participant-email">E-mail para contato</label
+        ><input
+          id="participant-email"
+          name="email"
+          type="email"
+          [(ngModel)]="draft.email"
+          required
+          email
+          maxlength="254"
+          autocomplete="email"
+        /><label for="resource">Como deseja participar?</label
+        ><select id="resource" name="resource" [(ngModel)]="draft.resource" required>
+          @if (c.funding_type !== 'items') {
+            <option value="money">Valor em dinheiro</option>
+          }
+          @for (item of c.items; track item.id) {
+            <option [value]="item.id">{{ item.name }} ({{ item.unit }})</option>
+          }
+        </select>
+        @if (draft.resource === 'money') {
+          <label for="amount">Valor (R$)</label
+          ><input
+            id="amount"
+            name="amount"
+            type="number"
+            min="0.01"
+            max="100000000"
+            step="0.01"
+            [(ngModel)]="draft.amount"
+            required
+          />
+        } @else {
+          <label for="quantity">Quantidade</label
+          ><input
+            id="quantity"
+            name="quantity"
+            type="number"
+            min="1"
+            max="1000000"
+            step="1"
+            [(ngModel)]="draft.quantity"
+            required
+          />
+        }
+        <label for="participant-message">Mensagem para a organização (opcional)</label
+        ><textarea
+          id="participant-message"
+          name="message"
+          rows="3"
+          maxlength="2000"
+          [(ngModel)]="draft.message"
+        ></textarea>
+        <p class="support-note">
+          Ao enviar, você compartilha seu nome, e-mail e mensagem com a organização.
+          {{
+            participation() === 'donate'
+              ? 'O envio não efetua um pagamento.'
+              : 'O envio não garante atendimento nem transferência de valores.'
+          }}
+        </p>
+        @if (saveError()) {
+          <p class="error" role="alert">{{ saveError() }}</p>
+        }
+        <button
+          class="button primary full-width"
+          [disabled]="saving() || participationForm.invalid"
+        >
+          {{ saving() ? 'Enviando…' : 'Enviar solicitação' }}
+        </button>
+      </form></app-dialog
+    >
+  }
+}

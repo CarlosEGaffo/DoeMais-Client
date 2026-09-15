@@ -1,0 +1,81 @@
+<main class="login-layout" [class.dialog-login]="compact()">
+  <section class="login-story" aria-labelledby="mission">
+    <a class="brand brand-light" routerLink="/" aria-label="DoaMais, início"
+      ><span class="brand-mark" aria-hidden="true">✳</span> doa<span>mais</span></a
+    >
+    <div class="story-content">
+      <span class="eyebrow light">CONECTAR · CUIDAR · TRANSFORMAR</span>
+      <h1 id="mission">Toda doação.<br />Uma nova<br /><em>possibilidade.</em></h1>
+      <p>
+        Grandes mudanças começam com um gesto. Juntos, fazemos a solidariedade chegar mais longe.
+      </p>
+      <div class="story-art" aria-hidden="true">
+        <span class="art-circle">♡</span
+        ><span class="art-label">Mais cuidado.<br />Mais impacto.</span
+        ><span class="art-star">✳</span>
+      </div>
+    </div>
+    <small>Uma rede de pessoas que transforma vidas.</small>
+  </section>
+  <section class="login-form-area" aria-labelledby="login-title">
+    <span class="admin-label">ÁREA ADMINISTRATIVA</span>
+    <div class="login-card">
+      <span class="eyebrow">BEM-VINDO DE VOLTA</span>
+      <h2 id="login-title">Vamos fazer o bem?</h2>
+      <p class="muted">Entre para acompanhar e cuidar de cada doação.</p>
+      @if (expired) {
+        <p class="notice" role="status">Sua sessão expirou. Entre novamente para continuar.</p>
+      }
+      <form (submit)="submit($event)" novalidate [attr.aria-busy]="busy()">
+        <label for="email">E-mail</label
+        ><input
+          id="email"
+          type="email"
+          [formField]="fields.email"
+          autocomplete="username"
+          placeholder="voce@organizacao.org"
+          aria-describedby="email-error"
+        />
+        <div id="email-error" class="field-error">
+          @if (fields.email().touched() && fields.email().invalid()) {
+            Informe um e-mail válido.
+          }
+        </div>
+        <label for="password">Senha</label>
+        <div class="password-field">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            [formField]="fields.password"
+            autocomplete="current-password"
+            placeholder="Sua senha"
+            aria-describedby="password-error"
+          /><button
+            type="button"
+            class="password-toggle"
+            (click)="showPassword.set(!showPassword())"
+            [attr.aria-pressed]="showPassword()"
+          >
+            {{ showPassword() ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        <div id="password-error" class="field-error">
+          @if (fields.password().touched() && fields.password().invalid()) {
+            Informe sua senha.
+          }
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <button class="button primary login-submit" type="submit" [disabled]="busy()">
+          {{ busy() ? 'Entrando…' : 'Entrar no painel' }} <span aria-hidden="true">→</span>
+        </button>
+      </form>
+      <p><a routerLink="/campanhas">← Conhecer as campanhas sem entrar</a></p>
+      <p class="login-help">
+        Precisa de acesso? Entre em contato com o administrador da sua organização.
+      </p>
+    </div>
+    <footer class="login-footer">DoaMais <span>Solidariedade que conecta.</span></footer>
+  </section>
+</main>

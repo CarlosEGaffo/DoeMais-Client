@@ -1,0 +1,244 @@
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">CAUSAS QUE CONECTAM</span>
+    <h1>Campanhas</h1>
+    <p class="muted">Conte uma história. Reúna itens, valores e pessoas.</p>
+  </div>
+  <button class="button primary" (click)="createOpen.set(true)">+ Nova campanha</button>
+</div>
+@if (message()) {
+  <p class="notice" role="status">{{ message() }}</p>
+}
+<section class="panel">
+  <form class="inline-search" (ngSubmit)="load(1)">
+    <div>
+      <label for="admin-search">Buscar campanha</label
+      ><input
+        id="admin-search"
+        name="search"
+        [(ngModel)]="search"
+        type="search"
+        maxlength="100"
+        placeholder="Nome, organização ou cidade"
+      />
+    </div>
+    <button class="button secondary" [disabled]="loading()">Buscar</button>
+  </form>
+  @if (loading()) {
+    <p role="status">Carregando campanhas…</p>
+  } @else if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+    <button class="text-button" (click)="load()">Tentar novamente</button>
+  } @else {
+    @for (c of campaigns(); track c.id) {
+      <article class="campaign-item">
+        <div class="panel-heading">
+          <h2>
+            <a [routerLink]="['/campanhas', c.id]">{{ c.name }}</a>
+          </h2>
+          <span class="badge">{{ c.status === 'active' ? 'Ativa' : 'Encerrada' }}</span>
+        </div>
+        <p class="muted">
+          {{ c.organization_name }} · {{ c.category }} · {{ c.location || 'Local a combinar' }}
+        </p>
+        <p class="cause-excerpt">{{ c.description }}</p>
+        <p>Criada por {{ c.creator_name || 'autoria não registrada' }}</p>
+        @if (c.goal_cents > 0) {
+          <p>
+            <strong>{{ c.raised_cents / 100 | currency: 'BRL' }}</strong> de
+            {{ c.goal_cents / 100 | currency: 'BRL' }}
+          </p>
+        }
+        @if (c.items.length) {
+          <p>{{ c.items.length }} tipos de itens cadastrados</p>
+        }
+        <a class="text-button" [routerLink]="['/campanhas', c.id]">Ver página pública →</a>
+      </article>
+    } @empty {
+      <p>Nenhuma campanha encontrada.</p>
+    }
+  }
+  <app-pagination
+    [total]="total()"
+    [page]="page()"
+    [disabled]="loading()"
+    (changed)="load($event)"
+  />
+</section>
+@if (createOpen()) {
+  <app-dialog title="Criar campanha" (closed)="createOpen.set(false)"
+    ><p class="muted">
+      Seu nome será exibido como autor. Preencha os detalhes para ajudar as pessoas a entender a
+      causa.
+    </p>
+    <form #campaignForm="ngForm" (ngSubmit)="create()">
+      @if (auth.user()?.role === 'superadmin') {
+        <label for="campaign-organization">Organização responsável</label
+        ><select
+          id="campaign-organization"
+          name="organization"
+          [(ngModel)]="organizationId"
+          required
+        >
+          <option [ngValue]="null">Selecione</option>
+          @for (o of organizations(); track o.id) {
+            <option [ngValue]="o.id">{{ o.name }}</option>
+          }
+        </select>
+      }
+      <label for="name">Nome da campanha</label
+      ><input
+        id="name"
+        name="name"
+        [(ngModel)]="draft.name"
+        required
+        minlength="3"
+        maxlength="100"
+      />
+      <div class="form-columns">
+        <div>
+          <label for="category">Categoria</label
+          ><input
+            id="category"
+            name="category"
+            [(ngModel)]="draft.category"
+            required
+            minlength="2"
+            maxlength="60"
+            placeholder="Ex.: Educação"
+          />
+        </div>
+        <div>
+          <label for="location">Cidade ou região</label
+          ><input
+            id="location"
+            name="location"
+            [(ngModel)]="draft.location"
+            maxlength="150"
+            placeholder="Ex.: Recife, PE"
+          />
+        </div>
+      </div>
+      <label for="description">História e objetivo da campanha</label
+      ><textarea
+        id="description"
+        name="description"
+        [(ngModel)]="draft.description"
+        rows="5"
+        maxlength="6000"
+        placeholder="Quem será ajudado? Qual é a necessidade? Como a contribuição será usada?"
+      ></textarea>
+      <label for="instructions">Como doar ou solicitar ajuda</label
+      ><textarea
+        id="instructions"
+        name="instructions"
+        [(ngModel)]="draft.instructions"
+        rows="3"
+        maxlength="2000"
+        placeholder="Informe condições dos itens, região atendida e como será combinada a entrega."
+      ></textarea>
+      <label for="funding">O que a campanha precisa?</label
+      ><select id="funding" name="funding" [(ngModel)]="draft.funding_type">
+        <option value="money">Valores em dinheiro</option>
+        <option value="items">Itens</option>
+        <option value="mixed">Itens e valores</option>
+      </select>
+      @if (draft.funding_type !== 'items') {
+        <label for="goal">Meta de arrecadação (R$)</label
+        ><input
+          id="goal"
+          name="goal"
+          type="number"
+          [(ngModel)]="draft.goal"
+          min="0.01"
+          max="100000000"
+          step="0.01"
+          required
+        />
+      }
+      @if (draft.funding_type !== 'money') {
+        <div class="panel-heading">
+          <h3>Itens necessários</h3>
+          <button
+            type="button"
+            class="button secondary"
+            [disabled]="items().length >= 30"
+            (click)="itemOpen.set(true)"
+          >
+            + Adicionar item
+          </button>
+        </div>
+        @for (item of items(); track $index) {
+          <div class="draft-item">
+            <span
+              ><strong>{{ item.name }}</strong> · {{ item.target_quantity }} {{ item.unit }}</span
+            ><button
+              type="button"
+              class="text-button"
+              [attr.aria-label]="'Remover ' + item.name"
+              (click)="removeItem($index)"
+            >
+              Remover
+            </button>
+          </div>
+        } @empty {
+          <p class="muted">Adicione o nome, a quantidade e a unidade de cada item.</p>
+        }
+      }
+      @if (saveError()) {
+        <p class="error" role="alert">{{ saveError() }}</p>
+      }
+      <button class="button primary full-width" [disabled]="saving() || campaignForm.invalid">
+        {{ saving() ? 'Criando…' : 'Criar campanha' }}
+      </button>
+    </form></app-dialog
+  >
+}
+@if (itemOpen()) {
+  <app-dialog title="Adicionar item" (closed)="itemOpen.set(false)"
+    ><form #itemForm="ngForm" (ngSubmit)="addItem()">
+      <label for="item-name">Nome do item</label
+      ><input
+        id="item-name"
+        name="name"
+        [(ngModel)]="itemDraft.name"
+        required
+        minlength="2"
+        maxlength="100"
+        placeholder="Ex.: Arroz"
+      />
+      <div class="form-columns">
+        <div>
+          <label for="item-quantity">Quantidade necessária</label
+          ><input
+            id="item-quantity"
+            name="quantity"
+            type="number"
+            [(ngModel)]="itemDraft.target_quantity"
+            min="1"
+            max="1000000"
+            step="1"
+            required
+          />
+        </div>
+        <div>
+          <label for="item-unit">Unidade</label
+          ><input
+            id="item-unit"
+            name="unit"
+            [(ngModel)]="itemDraft.unit"
+            required
+            maxlength="30"
+            placeholder="kg, caixas, unidades"
+          />
+        </div>
+      </div>
+      @if (saveError()) {
+        <p class="error" role="alert">{{ saveError() }}</p>
+      }
+      <button class="button primary full-width" [disabled]="itemForm.invalid">
+        Adicionar à campanha
+      </button>
+    </form></app-dialog
+  >
+}
