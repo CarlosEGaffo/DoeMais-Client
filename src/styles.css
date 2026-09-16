@@ -1067,11 +1067,55 @@ body:has(dialog[open]) {
   padding: 24px 0 6px;
   border-top: 1px solid #dce5df;
 }
-.pagination > div {
+.pagination-controls {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
 }
-.pagination button:disabled {
+.page-numbers {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.page-number {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid #dce5df;
+  border-radius: 999px;
+  background: transparent;
+  color: #255f4d;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.page-number:hover:not(:disabled):not(.current) {
+  background: #e8efe3;
+  border-color: #b9cdbf;
+}
+.page-number:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.page-number.current {
+  background: #255f4d;
+  border-color: #255f4d;
+  color: #fff;
+  cursor: default;
+  opacity: 1;
+}
+.page-gap {
+  padding: 0 2px;
+  color: #68817a;
+}
+.pagination button:disabled,
+.page-number:disabled {
   cursor: default;
 }
 .campaign-hero {
@@ -1452,9 +1496,14 @@ body:has(dialog[open]) {
   .pagination {
     align-items: stretch;
   }
-  .pagination > div {
+  .pagination-controls {
     width: 100%;
     justify-content: space-between;
+  }
+  .page-numbers {
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
   .inline-search {
     flex-wrap: wrap;
