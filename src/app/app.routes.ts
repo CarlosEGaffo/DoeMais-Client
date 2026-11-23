@@ -39,6 +39,11 @@ export const routes: Routes = [
         title: 'Doações | DoaMais',
         loadComponent: () => import('./features/admin/donations').then((m) => m.Donations),
       },
+      {
+        path: 'guia',
+        title: 'Guia do usuário | DoaMais',
+        loadComponent: () => import('./features/admin/guide').then((m) => m.Guide),
+      },
     ],
   },
   {

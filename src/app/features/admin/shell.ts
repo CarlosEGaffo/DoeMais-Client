@@ -33,6 +33,9 @@ import { AuthService } from '../../core/auth.service';
               >Usuários e organizações</a
             >
           }
+          <a routerLink="/admin/guia" routerLinkActive="active" ariaCurrentWhenActive="page"
+            ><span aria-hidden="true">☰</span> Guia do usuário</a
+          >
           <a routerLink="/campanhas">Ver site público ↗</a>
         </nav>
         <div class="sidebar-note">
